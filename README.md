@@ -46,7 +46,8 @@ yarn install
 
 3. Create a `.env.local` file in the root directory and add your environment variables:
 ```env
-# Add your environment variables here
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 4. Start the development server:
