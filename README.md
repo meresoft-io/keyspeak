@@ -63,58 +63,43 @@ yarn dev
 
 The application requires several Supabase tables to be set up. Here are the required table configurations:
 
-### Users Table
-This table is typically handled automatically by Supabase Auth, but you might want to extend it with additional fields:
-
 ```sql
-create table public.users (
-  id uuid primary key,
-  email text not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  full_name text,
-  avatar_url text
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Create client_parameters table
+CREATE TABLE client_parameters (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id),
+  client_name TEXT NOT NULL,
+  client_type TEXT NOT NULL,
+  budget_min INTEGER NOT NULL,
+  budget_max INTEGER NOT NULL,
+  urgency_level INTEGER NOT NULL,
+  personality_traits TEXT[] NOT NULL,
+  property_preferences TEXT,
+  special_requirements TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-```
 
-### Client Parameters Table
-```sql
-create table public.client_parameters (
-  id uuid primary key default uuid_generate_v4(),
-  user_id uuid references public.users(id) on delete cascade,
-  client_name text not null,
-  client_type text not null,
-  budget_min integer,
-  budget_max integer,
-  urgency_level integer,
-  personality_traits text[],
-  property_preferences text,
-  special_requirements text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- Create chat_sessions table
+CREATE TABLE chat_sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id),
+  client_parameters_id UUID REFERENCES client_parameters(id),
+  start_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  end_time TIMESTAMP WITH TIME ZONE,
+  status TEXT NOT NULL
 );
-```
 
-### Chat Sessions Table
-```sql
-create table public.chat_sessions (
-  id uuid primary key default uuid_generate_v4(),
-  user_id uuid references public.users(id) on delete cascade,
-  client_parameters_id uuid references public.client_parameters(id) on delete cascade,
-  start_time timestamp with time zone default timezone('utc'::text, now()) not null,
-  end_time timestamp with time zone,
-  status text not null default 'active'
-);
-```
-
-### Messages Table
-```sql
-create table public.messages (
-  id uuid primary key default uuid_generate_v4(),
-  chat_session_id uuid references public.chat_sessions(id) on delete cascade,
-  role text not null check (role in ('user', 'assistant')),
-  content text not null,
-  timestamp timestamp with time zone default timezone('utc'::text, now()) not null
+-- Create messages table
+CREATE TABLE messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  chat_session_id UUID REFERENCES chat_sessions(id),
+  role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
