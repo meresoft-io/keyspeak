@@ -2,13 +2,15 @@ from fastapi import FastAPI, Request, Form, File, UploadFile, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from api.dependencies import (
-    Item,
+from services.item import (
     ItemService,
-    ChatService,
     get_item_service,
+)
+from services.chat import (
+    ChatService,
     get_chat_service,
 )
+from models.item import Item
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
