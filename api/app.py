@@ -71,6 +71,26 @@ async def register_user(
     )
 
 
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse(
+        "login.html", {"request": request}
+    )
+
+
+@app.post("/login", response_class=HTMLResponse)
+async def login_user(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+):
+    # This is a placeholder - actual authentication will be implemented later
+    # Just redirect back to home page for now
+    return templates.TemplateResponse(
+        "index.html", {"request": request}
+    )
+
+
 @app.post("/htmx/add/", response_class=HTMLResponse)
 async def htmx_add_item(
     request: Request,
