@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from supabase import Client, create_client
 from models.config import SupabaseConfig
+import os
 from models.auth import User, UserCreate, UserLogin, AuthResponse
 from typing import Optional
 
@@ -21,6 +22,13 @@ class AuthService:
         supabase: Client = Depends(get_supabase_client),
     ):
         self.supabase = supabase
+        
+        # Set site URL for redirects (important for verification emails)
+        site_url = os.environ.get("SITE_URL", None)
+        if site_url:
+            self.supabase.auth.set_auth_config({
+                "site_url": site_url
+            })
 
     async def register(self, user_data: UserCreate) -> AuthResponse:
         try:
