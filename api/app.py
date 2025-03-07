@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Request, Form, File, UploadFile, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, Form, File, UploadFile, Depends, HTTPException, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import OAuth2PasswordRequestForm
 from services.item import (
     ItemService,
     get_item_service,
@@ -10,11 +11,42 @@ from services.chat import (
     ChatService,
     get_chat_service,
 )
+from services.auth import (
+    AuthService,
+    get_auth_service,
+)
 from models.item import Item
+from models.auth import UserCreate, UserLogin, AuthResponse
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+# Auth API Endpoints
+@app.post("/api/auth/register", response_model=AuthResponse)
+async def api_register(
+    user_data: UserCreate,
+    service: AuthService = Depends(get_auth_service)
+):
+    return await service.register(user_data)
+
+
+@app.post("/api/auth/login", response_model=AuthResponse)
+async def api_login(
+    credentials: UserLogin,
+    service: AuthService = Depends(get_auth_service)
+):
+    return await service.login(credentials)
+
+
+@app.post("/api/auth/logout")
+async def api_logout(
+    access_token: str = Form(...),
+    service: AuthService = Depends(get_auth_service)
+):
+    success = await service.logout(access_token)
+    return {"success": success}
 
 
 # Core API Endpoints
@@ -63,12 +95,29 @@ async def register_user(
     email: str = Form(...),
     password: str = Form(...),
     confirm_password: str = Form(...),
+    service: AuthService = Depends(get_auth_service)
 ):
-    # This is a placeholder - actual authentication will be implemented later
-    # Just redirect back to home page for now
-    return templates.TemplateResponse(
-        "index.html", {"request": request}
-    )
+    if password != confirm_password:
+        return templates.TemplateResponse(
+            "register.html", 
+            {"request": request, "error": "Passwords do not match"}
+        )
+        
+    try:
+        user_data = UserCreate(email=email, password=password)
+        await service.register(user_data)
+        # In a real application, you'd set cookies here for the session
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    except HTTPException as e:
+        return templates.TemplateResponse(
+            "register.html", 
+            {"request": request, "error": e.detail}
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            "register.html", 
+            {"request": request, "error": str(e)}
+        )
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -83,12 +132,23 @@ async def login_user(
     request: Request,
     email: str = Form(...),
     password: str = Form(...),
+    service: AuthService = Depends(get_auth_service)
 ):
-    # This is a placeholder - actual authentication will be implemented later
-    # Just redirect back to home page for now
-    return templates.TemplateResponse(
-        "index.html", {"request": request}
-    )
+    try:
+        credentials = UserLogin(email=email, password=password)
+        auth_response = await service.login(credentials)
+        # In a real application, you'd set cookies here for the session
+        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    except HTTPException as e:
+        return templates.TemplateResponse(
+            "login.html", 
+            {"request": request, "error": e.detail}
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            "login.html", 
+            {"request": request, "error": str(e)}
+        )
 
 
 @app.post("/htmx/add/", response_class=HTMLResponse)
