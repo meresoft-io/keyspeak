@@ -1,0 +1,12 @@
+modules = ["python-3.12", "bash"]
+run = "./start.sh"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "./start.sh"]
+
+[[ports]]
+localPort = 8000
+externalPort = 80
