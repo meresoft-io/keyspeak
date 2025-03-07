@@ -50,6 +50,27 @@ async def index(request: Request, service: ItemService = Depends(get_item_servic
     )
 
 
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    return templates.TemplateResponse(
+        "register.html", {"request": request}
+    )
+
+
+@app.post("/register", response_class=HTMLResponse)
+async def register_user(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+):
+    # This is a placeholder - actual authentication will be implemented later
+    # Just redirect back to home page for now
+    return templates.TemplateResponse(
+        "index.html", {"request": request}
+    )
+
+
 @app.post("/htmx/add/", response_class=HTMLResponse)
 async def htmx_add_item(
     request: Request,
