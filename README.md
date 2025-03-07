@@ -13,21 +13,18 @@ A revolutionary training platform for real estate agents to practice and perfect
 
 ## Tech Stack
 
-- **Framework:** Next.js 14
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS
-- **UI Components:** Radix UI
-- **State Management:** Zustand
-- **Form Handling:** React Hook Form with Zod validation
-- **Testing:** Vitest with Testing Library
+- **Framework:** FastAPI
+- **Language:** Python
 - **Database:** Supabase
+- **AI Integration:** OpenAI API
+- **Deployment:** Vercel (Python serverless)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18.x or later
-- npm or yarn
+- Python 3.12 or later
+- pip
 
 ### Installation
 
@@ -39,25 +36,24 @@ cd keyspeak
 
 2. Install dependencies:
 ```bash
-npm install
-# or
-yarn install
+pip install -r requirements.txt
 ```
 
 3. Create a `.env.local` file in the root directory and add your environment variables:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_anon_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 4. Start the development server:
 ```bash
-npm run dev
+./start.sh
 # or
-yarn dev
+python -m api.app
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the result.
+5. Open [http://localhost:8000](http://localhost:8000) in your browser to see the result.
 
 ## Database Setup
 
