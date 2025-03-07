@@ -45,9 +45,8 @@ async def api_chat(
 # HTMX Endpoints
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, service: ItemService = Depends(get_item_service)):
-    items = await service.get_items()
     return templates.TemplateResponse(
-        "index.html", {"request": request, "items": items}
+        "index.html", {"request": request}
     )
 
 
