@@ -1,8 +1,18 @@
-from fastapi import FastAPI, Request, Form, File, UploadFile, Depends, HTTPException, status
+from fastapi import (
+    FastAPI,
+    Request,
+    Form,
+    File,
+    UploadFile,
+    Depends,
+    HTTPException,
+    status,
+)
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordRequestForm
+import logging
 from services.item import (
     ItemService,
     get_item_service,
@@ -18,6 +28,12 @@ from services.auth import (
 from models.item import Item
 from models.auth import UserCreate, UserLogin, AuthResponse
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -26,27 +42,21 @@ templates = Jinja2Templates(directory="templates")
 # Auth API Endpoints
 @app.post("/api/auth/register", response_model=AuthResponse)
 async def api_register(
-    user_data: UserCreate,
-    service: AuthService = Depends(get_auth_service)
+    user_data: UserCreate, service: AuthService = Depends(get_auth_service)
 ):
     return await service.register(user_data)
 
 
 @app.post("/api/auth/login", response_model=AuthResponse)
 async def api_login(
-    credentials: UserLogin,
-    service: AuthService = Depends(get_auth_service)
+    credentials: UserLogin, service: AuthService = Depends(get_auth_service)
 ):
     return await service.login(credentials)
 
 
 @app.post("/api/auth/logout")
-async def api_logout(
-    access_token: str = Form(...),
-    service: AuthService = Depends(get_auth_service)
-):
-    success = await service.logout(access_token)
-    return {"success": success}
+async def api_logout(service: AuthService = Depends(get_auth_service)):
+    return await service.logout()
 
 
 # Core API Endpoints
@@ -77,16 +87,12 @@ async def api_chat(
 # HTMX Endpoints
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request, service: ItemService = Depends(get_item_service)):
-    return templates.TemplateResponse(
-        "index.html", {"request": request}
-    )
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    return templates.TemplateResponse(
-        "register.html", {"request": request}
-    )
+    return templates.TemplateResponse("register.html", {"request": request})
 
 
 @app.post("/register", response_class=HTMLResponse)
@@ -95,36 +101,39 @@ async def register_user(
     email: str = Form(...),
     password: str = Form(...),
     confirm_password: str = Form(...),
-    service: AuthService = Depends(get_auth_service)
+    service: AuthService = Depends(get_auth_service),
 ):
     if password != confirm_password:
+        logger.info("Registration failed: Passwords do not match")
         return templates.TemplateResponse(
-            "register.html", 
-            {"request": request, "error": "Passwords do not match"}
+            "components/error_message.html",
+            {"request": request, "message": "Passwords do not match"},
         )
-        
+
     try:
         user_data = UserCreate(email=email, password=password)
-        await service.register(user_data)
-        # In a real application, you'd set cookies here for the session
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+        auth_response = await service.register(user_data)
+        response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+        response.set_cookie(key="access_token", value=auth_response.access_token)
+        response.set_cookie(key="refresh_token", value=auth_response.refresh_token)
+        return response
     except HTTPException as e:
+        logger.error(f"Registration failed: {e.detail}")
         return templates.TemplateResponse(
-            "register.html", 
-            {"request": request, "error": e.detail}
+            "components/error_message.html",
+            {"request": request, "message": e.detail},
         )
     except Exception as e:
+        logger.error(f"Registration failed: {str(e)}")
         return templates.TemplateResponse(
-            "register.html", 
-            {"request": request, "error": str(e)}
+            "components/error_message.html",
+            {"request": request, "message": str(e)},
         )
 
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse(
-        "login.html", {"request": request}
-    )
+    return templates.TemplateResponse("login.html", {"request": request})
 
 
 @app.post("/login", response_class=HTMLResponse)
@@ -132,22 +141,24 @@ async def login_user(
     request: Request,
     email: str = Form(...),
     password: str = Form(...),
-    service: AuthService = Depends(get_auth_service)
+    service: AuthService = Depends(get_auth_service),
 ):
     try:
         credentials = UserLogin(email=email, password=password)
         auth_response = await service.login(credentials)
-        # In a real application, you'd set cookies here for the session
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+        response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+        response.set_cookie(key="access_token", value=auth_response.access_token)
+        return response
     except HTTPException as e:
         return templates.TemplateResponse(
-            "login.html", 
-            {"request": request, "error": e.detail}
+            "components/error_message.html",
+            {"request": request, "message": e.detail},
         )
     except Exception as e:
+        logger.error(f"Login failed: {str(e)}")
         return templates.TemplateResponse(
-            "login.html", 
-            {"request": request, "error": str(e)}
+            "components/error_message.html",
+            {"request": request, "message": str(e)},
         )
 
 
