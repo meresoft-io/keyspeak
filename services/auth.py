@@ -1,4 +1,3 @@
-
 from fastapi import Depends, HTTPException, status
 from supabase import Client, create_client
 from models.config import SupabaseConfig
@@ -29,20 +28,27 @@ class AuthService:
                 "email": user_data.email,
                 "password": user_data.password
             })
-            
+
             if not auth_response.user:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Registration failed"
                 )
-                
+
+            email = auth_response.user.email
+            if email is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email cannot be None"
+                )
+
             user = User(
                 id=auth_response.user.id,
-                email=auth_response.user.email,
+                email=email,
                 email_confirmed=auth_response.user.email_confirmed_at is not None,
                 last_sign_in=auth_response.user.last_sign_in_at
             )
-            
+
             return AuthResponse(
                 user=user,
                 access_token=auth_response.session.access_token,
@@ -60,20 +66,27 @@ class AuthService:
                 "email": credentials.email,
                 "password": credentials.password
             })
-            
+
             if not auth_response.user:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid credentials"
                 )
-                
+
+            email = auth_response.user.email
+            if email is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email cannot be None"
+                )
+
             user = User(
                 id=auth_response.user.id,
-                email=auth_response.user.email,
+                email=email,
                 email_confirmed=auth_response.user.email_confirmed_at is not None,
                 last_sign_in=auth_response.user.last_sign_in_at
             )
-            
+
             return AuthResponse(
                 user=user,
                 access_token=auth_response.session.access_token,
@@ -98,15 +111,22 @@ class AuthService:
     async def get_current_user(self, access_token: Optional[str] = None) -> Optional[User]:
         if not access_token:
             return None
-            
+
         try:
             auth_response = self.supabase.auth.get_user(access_token)
             if not auth_response.user:
                 return None
-                
+
+            email = auth_response.user.email
+            if email is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email cannot be None"
+                )
+
             return User(
                 id=auth_response.user.id,
-                email=auth_response.user.email,
+                email=email,
                 email_confirmed=auth_response.user.email_confirmed_at is not None,
                 last_sign_in=auth_response.user.last_sign_in_at
             )
