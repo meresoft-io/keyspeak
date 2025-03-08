@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KeySpeak Dashboard{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'hsl(221, 83%, 53%)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeInUp {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="font-sans antialiased bg-gray-50">
+    {% include "includes/app_header.html" %}
+
+    <div class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = "1";
+                    entry.target.style.transform = "translateY(0)";
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.animate-fadeInUp').forEach((el) => {
+            el.style.opacity = "0";
+            el.style.transform = "translateY(20px)";
+            observer.observe(el);
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

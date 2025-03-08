@@ -142,7 +142,7 @@ async def register_user(
     try:
         user_data = UserCreate(email=email, password=password)
         auth_response = await service.register(user_data)
-        response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+        response = RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
         response.set_cookie(key="access_token", value=auth_response.access_token)
         response.set_cookie(key="refresh_token", value=auth_response.refresh_token)
         return response
@@ -190,7 +190,7 @@ async def login_user(
             secure=True,
             samesite="lax",
         )
-        response.headers["HX-Redirect"] = "/"
+        response.headers["HX-Redirect"] = "/dashboard"
         return response
     except HTTPException as e:
         return templates.TemplateResponse(
@@ -212,6 +212,22 @@ async def logout_web_client(request: Request):
     response.delete_cookie(key="refresh_token")
     response.headers["HX-Redirect"] = "/"
     return response
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    access_token = request.cookies.get("access_token")
+    current_user = await auth_service.get_current_user(access_token)
+    
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+        
+    return templates.TemplateResponse(
+        "dashboard.html", {"request": request, "current_user": current_user}
+    )
 
 
 @app.post("/htmx/add/", response_class=HTMLResponse)
