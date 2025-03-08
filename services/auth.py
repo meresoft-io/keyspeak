@@ -139,6 +139,44 @@ class AuthService:
         except Exception:
             return None
 
+    async def refresh_token(self, refresh_token: str) -> AuthResponse:
+        try:
+            auth_response = self.supabase.auth.refresh_session(refresh_token)
+
+            if not auth_response.user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid refresh token",
+                )
+
+            email = auth_response.user.email
+            if email is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email cannot be None",
+                )
+
+            user = User(
+                id=auth_response.user.id,
+                email=email,
+                email_confirmed=auth_response.user.email_confirmed_at is not None,
+                last_sign_in=auth_response.user.last_sign_in_at,
+            )
+
+            if not auth_response.session:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Session cannot be None",
+                )
+
+            return AuthResponse(
+                user=user,
+                access_token=auth_response.session.access_token,
+                refresh_token=auth_response.session.refresh_token,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
 
 async def get_auth_service(
     supabase: Client = Depends(get_supabase_client),

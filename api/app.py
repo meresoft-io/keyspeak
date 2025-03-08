@@ -59,6 +59,27 @@ async def api_logout(service: AuthService = Depends(get_auth_service)):
     return await service.logout()
 
 
+@app.post("/api/auth/refresh")
+async def api_refresh_token(
+    request: Request, service: AuthService = Depends(get_auth_service)
+):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing"
+        )
+    auth_response = await service.refresh_token(refresh_token)
+    response = Response(content="Token refreshed")
+    response.set_cookie(
+        key="access_token",
+        value=auth_response.access_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    return response
+
+
 # Core API Endpoints
 @app.get("/api/items/", response_model=list[Item])
 async def api_get_items(service: ItemService = Depends(get_item_service)):
@@ -155,7 +176,20 @@ async def login_user(
         credentials = UserLogin(email=email, password=password)
         auth_response = await service.login(credentials)
         response = Response(content="Logged in successfully")
-        response.set_cookie(key="access_token", value=auth_response.access_token)
+        response.set_cookie(
+            key="access_token",
+            value=auth_response.access_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=auth_response.refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+        )
         response.headers["HX-Redirect"] = "/"
         return response
     except HTTPException as e:
