@@ -115,13 +115,13 @@ async def index(
     access_token = request.cookies.get("access_token")
     current_user = await auth_service.get_current_user(access_token)
     return templates.TemplateResponse(
-        "index.html", {"request": request, "current_user": current_user}
+        "pages/index.html", {"request": request, "current_user": current_user}
     )
 
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    return templates.TemplateResponse("pages/register.html", {"request": request})
 
 
 @app.post("/register", response_class=HTMLResponse)
@@ -162,7 +162,7 @@ async def register_user(
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse("pages/login.html", {"request": request})
 
 
 @app.post("/login", response_class=HTMLResponse)
@@ -221,12 +221,28 @@ async def dashboard(
 ):
     access_token = request.cookies.get("access_token")
     current_user = await auth_service.get_current_user(access_token)
-    
+
     if not current_user:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-        
+
     return templates.TemplateResponse(
-        "dashboard.html", {"request": request, "current_user": current_user}
+        "pages/dashboard.html", {"request": request, "current_user": current_user}
+    )
+
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings(
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    access_token = request.cookies.get("access_token")
+    current_user = await auth_service.get_current_user(access_token)
+
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    return templates.TemplateResponse(
+        "pages/settings.html", {"request": request, "current_user": current_user}
     )
 
 
@@ -240,7 +256,9 @@ async def htmx_add_item(
 ):
     image_content = await image.read() if image else None
     item = await service.add_item(name, quantity, image_content)
-    return templates.TemplateResponse("_item.html", {"request": request, "item": item})
+    return templates.TemplateResponse(
+        "components/_item.html", {"request": request, "item": item}
+    )
 
 
 @app.post("/htmx/chat/", response_class=HTMLResponse)
@@ -251,7 +269,7 @@ async def htmx_chat(
 ):
     response = await service.get_chat_response(script)
     return templates.TemplateResponse(
-        "_chat.html", {"request": request, "response": response}
+        "components/_chat.html", {"request": request, "response": response}
     )
 
 
