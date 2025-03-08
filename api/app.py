@@ -142,7 +142,7 @@ async def register_user(
     try:
         user_data = UserCreate(email=email, password=password)
         auth_response = await service.register(user_data)
-        response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+        response = RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
         response.set_cookie(key="access_token", value=auth_response.access_token)
         response.set_cookie(key="refresh_token", value=auth_response.refresh_token)
         return response
@@ -190,7 +190,7 @@ async def login_user(
             secure=True,
             samesite="lax",
         )
-        response.headers["HX-Redirect"] = "/"
+        response.headers["HX-Redirect"] = "/dashboard"
         return response
     except HTTPException as e:
         return templates.TemplateResponse(

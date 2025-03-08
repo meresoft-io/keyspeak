@@ -10,11 +10,14 @@
                 <a href="/#pricing" class="text-gray-600 hover:text-gray-900">Pricing</a>
                 <a href="/#testimonials" class="text-gray-600 hover:text-gray-900">Testimonials</a>
                 {% if current_user %}
-                <span class="text-gray-600">{{ current_user.email }}</span>
-                <form hx-post="/logout" class="inline">
-                    <button type="submit"
-                        class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">Logout</button>
-                </form>
+                <div class="hidden md:flex items-center ml-4 md:ml-6">
+                    <span class="text-gray-700 mr-4">{{ current_user.email }}</span>
+                    <a href="/dashboard" class="mr-3 px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Dashboard</a>
+                    <form hx-post="/logout" class="block">
+                        <button type="submit"
+                            class="px-4 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700">Logout</button>
+                    </form>
+                </div>
                 {% else %}
                 <a href="/login" class="text-gray-600 hover:text-gray-900">Sign in</a>
                 <a href="/register" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Get
@@ -36,6 +39,7 @@
                 <a href="/#testimonials" class="block px-3 py-2 text-gray-600 hover:text-gray-900">Testimonials</a>
                 {% if current_user %}
                 <span class="block px-3 py-2 text-gray-600">{{ current_user.email }}</span>
+                <a href="/dashboard" class="block px-3 py-2 text-gray-600 hover:text-gray-900">Dashboard</a>
                 <form hx-post="/logout" class="block">
                     <button type="submit"
                         class="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">Logout</button>
