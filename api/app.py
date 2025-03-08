@@ -214,6 +214,22 @@ async def logout_web_client(request: Request):
     return response
 
 
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    access_token = request.cookies.get("access_token")
+    current_user = await auth_service.get_current_user(access_token)
+    
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+        
+    return templates.TemplateResponse(
+        "dashboard.html", {"request": request, "current_user": current_user}
+    )
+
+
 @app.post("/htmx/add/", response_class=HTMLResponse)
 async def htmx_add_item(
     request: Request,
