@@ -7,6 +7,14 @@ from dotenv import load_dotenv
 load_dotenv(".env.local")
 
 
+class AppConfig(BaseModel):
+    debug: bool = Field(False, description="Enable debug mode")
+
+    @classmethod
+    def from_env(cls) -> "AppConfig":
+        return cls(debug=os.getenv("DEBUG", "false").lower() == "true")
+
+
 class SupabaseConfig(BaseModel):
     url: HttpUrl = Field(..., description="Supabase project URL")
     key: str = Field(..., min_length=1, description="Supabase anon key")

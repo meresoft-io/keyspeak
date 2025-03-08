@@ -24,9 +24,11 @@ from services.chat import (
 from services.auth import (
     AuthService,
     get_auth_service,
+    require_auth,
 )
 from models.item import Item
-from models.auth import UserCreate, UserLogin, AuthResponse
+from models.auth import UserCreate, UserLogin, AuthResponse, User
+from typing import Union
 
 # Configure logging
 logging.basicConfig(
@@ -175,6 +177,10 @@ async def login_user(
     try:
         credentials = UserLogin(email=email, password=password)
         auth_response = await service.login(credentials)
+
+        # Get the next URL from cookies, defaulting to dashboard
+        next_url = request.cookies.get("next", "/dashboard")
+
         response = Response(content="Logged in successfully")
         response.set_cookie(
             key="access_token",
@@ -190,7 +196,10 @@ async def login_user(
             secure=True,
             samesite="lax",
         )
-        response.headers["HX-Redirect"] = "/dashboard"
+        # Clear the next URL cookie
+        response.delete_cookie(key="next")
+
+        response.headers["HX-Redirect"] = next_url
         return response
     except HTTPException as e:
         return templates.TemplateResponse(
@@ -217,32 +226,26 @@ async def logout_web_client(request: Request):
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_result: Union[User, Response] = Depends(require_auth),
 ):
-    access_token = request.cookies.get("access_token")
-    current_user = await auth_service.get_current_user(access_token)
-
-    if not current_user:
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    if isinstance(auth_result, Response):
+        return auth_result
 
     return templates.TemplateResponse(
-        "pages/dashboard.html", {"request": request, "current_user": current_user}
+        "pages/dashboard.html", {"request": request, "current_user": auth_result}
     )
 
 
 @app.get("/settings", response_class=HTMLResponse)
 async def settings(
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service),
+    auth_result: Union[User, Response] = Depends(require_auth),
 ):
-    access_token = request.cookies.get("access_token")
-    current_user = await auth_service.get_current_user(access_token)
-
-    if not current_user:
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    if isinstance(auth_result, Response):
+        return auth_result
 
     return templates.TemplateResponse(
-        "pages/settings.html", {"request": request, "current_user": current_user}
+        "pages/settings.html", {"request": request, "current_user": auth_result}
     )
 
 

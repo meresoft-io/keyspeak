@@ -1,13 +1,20 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
+from fastapi.responses import RedirectResponse, Response
 from supabase import Client, create_client
-from models.config import SupabaseConfig
+from models.config import SupabaseConfig, AppConfig
 import os
 from models.auth import User, UserCreate, UserLogin, AuthResponse
-from typing import Optional
+from typing import Optional, Union
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
 
 
 def get_supabase_config() -> SupabaseConfig:
     return SupabaseConfig.from_env()
+
+
+def get_app_config() -> AppConfig:
+    return AppConfig.from_env()
 
 
 def get_supabase_client(
@@ -19,9 +26,11 @@ def get_supabase_client(
 class AuthService:
     def __init__(
         self,
-        supabase: Client = Depends(get_supabase_client),
+        supabase: Client,
+        app_config: AppConfig,
     ):
         self.supabase = supabase
+        self.app_config = app_config
 
     async def register(self, user_data: UserCreate) -> AuthResponse:
         try:
@@ -118,6 +127,7 @@ class AuthService:
             return None
 
         try:
+
             auth_response = self.supabase.auth.get_user(access_token)
 
             if not auth_response or not auth_response.user:
@@ -141,6 +151,7 @@ class AuthService:
 
     async def refresh_token(self, refresh_token: str) -> AuthResponse:
         try:
+
             auth_response = self.supabase.auth.refresh_session(refresh_token)
 
             if not auth_response.user:
@@ -180,5 +191,58 @@ class AuthService:
 
 async def get_auth_service(
     supabase: Client = Depends(get_supabase_client),
+    app_config: AppConfig = Depends(get_app_config),
 ) -> AuthService:
-    return AuthService(supabase)
+    return AuthService(supabase, app_config)
+
+
+async def require_auth(
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
+) -> Union[User, Response]:
+    # Try to get access token from cookies
+    access_token = request.cookies.get("access_token")
+    if access_token:
+        # Try to get user with current access token
+        current_user = await auth_service.get_current_user(access_token)
+        if current_user:
+            return current_user
+
+    # If access token is invalid or missing, try to refresh
+    refresh_token = request.cookies.get("refresh_token")
+    if refresh_token:
+        try:
+            # Try to refresh the token
+            auth_response = await auth_service.refresh_token(refresh_token)
+
+            # Create a response that will be used to set cookies
+            response = RedirectResponse(url=request.url.path)
+            response.set_cookie(
+                key="access_token",
+                value=auth_response.access_token,
+                httponly=True,
+                secure=True,
+                samesite="lax",
+            )
+            response.set_cookie(
+                key="refresh_token",
+                value=auth_response.refresh_token,
+                httponly=True,
+                secure=True,
+                samesite="lax",
+            )
+
+            # Store the response in request state for later use
+            request.state.auth_response = response
+            return auth_response.user
+        except:
+            pass
+
+    # If we get here, authentication failed
+    # Store the original URL in the session for redirect after login
+    response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    response.set_cookie(
+        key="next", value=str(request.url), httponly=True, secure=True, samesite="lax"
+    )
+
+    return response
