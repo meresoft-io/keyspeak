@@ -7,20 +7,24 @@
                 </div>
                 <nav class="hidden md:ml-6 md:flex md:space-x-8">
                     <a href="/dashboard"
-                        class="inline-flex items-center px-1 pt-1 border-b-2 border-blue-500 text-sm font-medium text-gray-900">Dashboard</a>
+                        class="inline-flex items-center px-1 pt-1 border-b-2 {% if request.url.path == '/dashboard' %}border-blue-500 text-gray-900{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} text-sm font-medium">Dashboard</a>
                     <a href="#"
                         class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">Analytics</a>
                     <a href="#"
                         class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">Scripts</a>
+                    <a href="/settings"
+                        class="inline-flex items-center px-1 pt-1 border-b-2 {% if request.url.path == '/settings' %}border-blue-500 text-gray-900{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} text-sm font-medium">Settings</a>
                 </nav>
             </div>
             <div class="flex items-center">
                 {% if current_user %}
                 <div class="hidden md:ml-3 md:relative md:flex md:items-center">
-                    <div class="text-sm text-gray-700 mr-4">{{ current_user.email }}</div>
-                    <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                        {{ current_user.email[0].upper() }}
-                    </div>
+                    <a href="/settings" class="flex items-center hover:opacity-80">
+                        <div class="text-sm text-gray-700 mr-4">{{ current_user.email }}</div>
+                        <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                            {{ current_user.email[0].upper() }}
+                        </div>
+                    </a>
                 </div>
                 {% endif %}
                 <button class="md:hidden text-gray-600" id="internalMobileMenuButton">
@@ -36,24 +40,28 @@
         <div class="md:hidden hidden" id="internalMobileMenu">
             <div class="pt-2 pb-3 space-y-1">
                 <a href="/dashboard"
-                    class="block pl-3 pr-4 py-2 border-l-4 border-blue-500 text-base font-medium text-blue-700 bg-blue-50">Dashboard</a>
+                    class="block pl-3 pr-4 py-2 border-l-4 {% if request.url.path == '/dashboard' %}border-blue-500 text-blue-700 bg-blue-50{% else %}border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800{% endif %} text-base font-medium">Dashboard</a>
                 <a href="#"
                     class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800">Analytics</a>
                 <a href="#"
                     class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800">Scripts</a>
+                <a href="/settings"
+                    class="block pl-3 pr-4 py-2 border-l-4 {% if request.url.path == '/settings' %}border-blue-500 text-blue-700 bg-blue-50{% else %}border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800{% endif %} text-base font-medium">Settings</a>
             </div>
             {% if current_user %}
             <div class="pt-4 pb-3 border-t border-gray-200">
-                <div class="flex items-center px-4">
-                    <div class="flex-shrink-0">
-                        <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                            {{ current_user.email[0].upper() }}
+                <a href="/settings" class="block">
+                    <div class="flex items-center px-4">
+                        <div class="flex-shrink-0">
+                            <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                {{ current_user.email[0].upper() }}
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-base font-medium text-gray-800">{{ current_user.email }}</div>
                         </div>
                     </div>
-                    <div class="ml-3">
-                        <div class="text-base font-medium text-gray-800">{{ current_user.email }}</div>
-                    </div>
-                </div>
+                </a>
                 <div class="mt-3 space-y-1">
                     <form hx-post="/logout" class="block">
                         <button type="submit"
