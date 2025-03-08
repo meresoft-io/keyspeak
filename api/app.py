@@ -171,6 +171,15 @@ async def login_user(
         )
 
 
+@app.post("/logout", response_class=HTMLResponse)
+async def logout_web_client(request: Request):
+    response = Response(content="Logged out successfully")
+    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="refresh_token")
+    response.headers["HX-Redirect"] = "/"
+    return response
+
+
 @app.post("/htmx/add/", response_class=HTMLResponse)
 async def htmx_add_item(
     request: Request,

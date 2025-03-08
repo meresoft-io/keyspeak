@@ -11,7 +11,7 @@
                 <a href="/#testimonials" class="text-gray-600 hover:text-gray-900">Testimonials</a>
                 {% if current_user %}
                 <span class="text-gray-600">{{ current_user.email }}</span>
-                <form action="/api/auth/logout" method="post" class="inline">
+                <form hx-post="/logout" class="inline">
                     <button type="submit"
                         class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">Logout</button>
                 </form>
