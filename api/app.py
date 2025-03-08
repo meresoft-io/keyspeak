@@ -8,7 +8,7 @@ from fastapi import (
     HTTPException,
     status,
 )
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordRequestForm
@@ -86,8 +86,16 @@ async def api_chat(
 
 # HTMX Endpoints
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request, service: ItemService = Depends(get_item_service)):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def index(
+    request: Request,
+    service: ItemService = Depends(get_item_service),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    access_token = request.cookies.get("access_token")
+    current_user = await auth_service.get_current_user(access_token)
+    return templates.TemplateResponse(
+        "index.html", {"request": request, "current_user": current_user}
+    )
 
 
 @app.get("/register", response_class=HTMLResponse)
@@ -146,8 +154,9 @@ async def login_user(
     try:
         credentials = UserLogin(email=email, password=password)
         auth_response = await service.login(credentials)
-        response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+        response = Response(content="Logged in successfully")
         response.set_cookie(key="access_token", value=auth_response.access_token)
+        response.headers["HX-Redirect"] = "/"
         return response
     except HTTPException as e:
         return templates.TemplateResponse(

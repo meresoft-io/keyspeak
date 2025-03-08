@@ -9,9 +9,17 @@
                 <a href="/#features" class="text-gray-600 hover:text-gray-900">Features</a>
                 <a href="/#pricing" class="text-gray-600 hover:text-gray-900">Pricing</a>
                 <a href="/#testimonials" class="text-gray-600 hover:text-gray-900">Testimonials</a>
+                {% if current_user %}
+                <span class="text-gray-600">{{ current_user.email }}</span>
+                <form action="/api/auth/logout" method="post" class="inline">
+                    <button type="submit"
+                        class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">Logout</button>
+                </form>
+                {% else %}
                 <a href="/login" class="text-gray-600 hover:text-gray-900">Sign in</a>
                 <a href="/register" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Get
                     Started</a>
+                {% endif %}
             </div>
             <button class="md:hidden text-gray-600" id="mobileMenuButton">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
@@ -26,9 +34,17 @@
                 <a href="/#features" class="block px-3 py-2 text-gray-600 hover:text-gray-900">Features</a>
                 <a href="/#pricing" class="block px-3 py-2 text-gray-600 hover:text-gray-900">Pricing</a>
                 <a href="/#testimonials" class="block px-3 py-2 text-gray-600 hover:text-gray-900">Testimonials</a>
+                {% if current_user %}
+                <span class="block px-3 py-2 text-gray-600">{{ current_user.email }}</span>
+                <form action="/api/auth/logout" method="post" class="block">
+                    <button type="submit"
+                        class="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">Logout</button>
+                </form>
+                {% else %}
                 <a href="/login" class="block px-3 py-2 text-gray-600 hover:text-gray-900">Sign in</a>
                 <a href="/register"
                     class="block w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Get Started</a>
+                {% endif %}
             </div>
         </div>
     </div>
