@@ -1,0 +1,189 @@
+from fastapi import (
+    APIRouter,
+    Request,
+    Depends,
+    Form,
+    File,
+    UploadFile,
+    Response,
+    status,
+    HTTPException,
+)
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from services.item import ItemService, get_item_service
+from services.chat import ChatService, get_chat_service
+from services.auth import AuthService, get_auth_service, require_auth
+from models.auth import UserCreate, UserLogin, User
+from typing import Union
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+htmx_router = APIRouter()
+templates = Jinja2Templates(directory="templates")
+
+
+@htmx_router.get("/", response_class=HTMLResponse)
+async def index(
+    request: Request,
+    service: ItemService = Depends(get_item_service),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    access_token = request.cookies.get("access_token")
+    current_user = await auth_service.get_current_user(access_token)
+    return templates.TemplateResponse(
+        "pages/index.html", {"request": request, "current_user": current_user}
+    )
+
+
+@htmx_router.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    return templates.TemplateResponse("pages/register.html", {"request": request})
+
+
+@htmx_router.post("/register", response_class=HTMLResponse)
+async def register_user(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    service: AuthService = Depends(get_auth_service),
+):
+    if password != confirm_password:
+        logger.info("Registration failed: Passwords do not match")
+        return templates.TemplateResponse(
+            "components/error_message.html",
+            {"request": request, "message": "Passwords do not match"},
+        )
+
+    try:
+        user_data = UserCreate(email=email, password=password)
+        auth_response = await service.register(user_data)
+        response = RedirectResponse(url="/dashboard", status_code=status.HTTP_302_FOUND)
+        response.set_cookie(key="access_token", value=auth_response.access_token)
+        response.set_cookie(key="refresh_token", value=auth_response.refresh_token)
+        return response
+    except HTTPException as e:
+        logger.error(f"Registration failed: {e.detail}")
+        return templates.TemplateResponse(
+            "components/error_message.html",
+            {"request": request, "message": e.detail},
+        )
+    except Exception as e:
+        logger.error(f"Registration failed: {str(e)}")
+        return templates.TemplateResponse(
+            "components/error_message.html",
+            {"request": request, "message": str(e)},
+        )
+
+
+@htmx_router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("pages/login.html", {"request": request})
+
+
+@htmx_router.post("/login", response_class=HTMLResponse)
+async def login_user(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    service: AuthService = Depends(get_auth_service),
+):
+    try:
+        credentials = UserLogin(email=email, password=password)
+        auth_response = await service.login(credentials)
+        next_url = request.cookies.get("next", "/dashboard")
+        response = Response(content="Logged in successfully")
+        response.set_cookie(
+            key="access_token",
+            value=auth_response.access_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=auth_response.refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+        )
+        response.delete_cookie(key="next")
+        response.headers["HX-Redirect"] = next_url
+        return response
+    except HTTPException as e:
+        return templates.TemplateResponse(
+            "components/error_message.html",
+            {"request": request, "message": e.detail},
+        )
+    except Exception as e:
+        logger.error(f"Login failed: {str(e)}")
+        return templates.TemplateResponse(
+            "components/error_message.html",
+            {"request": request, "message": str(e)},
+        )
+
+
+@htmx_router.post("/logout", response_class=HTMLResponse)
+async def logout_web_client(request: Request):
+    response = Response(content="Logged out successfully")
+    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="refresh_token")
+    response.headers["HX-Redirect"] = "/"
+    return response
+
+
+@htmx_router.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(
+    request: Request,
+    auth_result: Union[User, Response] = Depends(require_auth),
+):
+    if isinstance(auth_result, Response):
+        return auth_result
+    return templates.TemplateResponse(
+        "pages/dashboard.html", {"request": request, "current_user": auth_result}
+    )
+
+
+@htmx_router.get("/settings", response_class=HTMLResponse)
+async def settings(
+    request: Request,
+    auth_result: Union[User, Response] = Depends(require_auth),
+):
+    if isinstance(auth_result, Response):
+        return auth_result
+    return templates.TemplateResponse(
+        "pages/settings.html", {"request": request, "current_user": auth_result}
+    )
+
+
+@htmx_router.post("/htmx/add/", response_class=HTMLResponse)
+async def htmx_add_item(
+    request: Request,
+    name: str = Form(...),
+    quantity: int = Form(...),
+    image: UploadFile | None = File(None),
+    service: ItemService = Depends(get_item_service),
+):
+    image_content = await image.read() if image else None
+    item = await service.add_item(name, quantity, image_content)
+    return templates.TemplateResponse(
+        "components/_item.html", {"request": request, "item": item}
+    )
+
+
+@htmx_router.post("/htmx/chat/", response_class=HTMLResponse)
+async def htmx_chat(
+    request: Request,
+    script: str = Form(...),
+    service: ChatService = Depends(get_chat_service),
+):
+    response = await service.get_chat_response(script)
+    return templates.TemplateResponse(
+        "components/_chat.html", {"request": request, "response": response}
+    )
