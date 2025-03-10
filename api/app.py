@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import logging
 from routes.api_routes import api_router
-from routes.web_routes import htmx_router
+from routes.web_routes import web_router
 
 # Configure logging
 logging.basicConfig(
@@ -15,7 +15,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include routers
 app.include_router(api_router)
-app.include_router(htmx_router)
+app.include_router(web_router)
 
 if __name__ == "__main__":
     import uvicorn

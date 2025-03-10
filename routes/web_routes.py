@@ -24,11 +24,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-htmx_router = APIRouter()
+web_router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
-@htmx_router.get("/", response_class=HTMLResponse)
+@web_router.get("/", response_class=HTMLResponse)
 async def index(
     request: Request,
     service: ItemService = Depends(get_item_service),
@@ -41,12 +41,12 @@ async def index(
     )
 
 
-@htmx_router.get("/register", response_class=HTMLResponse)
+@web_router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
     return templates.TemplateResponse("pages/register.html", {"request": request})
 
 
-@htmx_router.post("/register", response_class=HTMLResponse)
+@web_router.post("/register", response_class=HTMLResponse)
 async def register_user(
     request: Request,
     email: str = Form(...),
@@ -82,12 +82,12 @@ async def register_user(
         )
 
 
-@htmx_router.get("/login", response_class=HTMLResponse)
+@web_router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("pages/login.html", {"request": request})
 
 
-@htmx_router.post("/login", response_class=HTMLResponse)
+@web_router.post("/login", response_class=HTMLResponse)
 async def login_user(
     request: Request,
     email: str = Form(...),
@@ -129,7 +129,7 @@ async def login_user(
         )
 
 
-@htmx_router.post("/logout", response_class=HTMLResponse)
+@web_router.post("/logout", response_class=HTMLResponse)
 async def logout_web_client(request: Request):
     response = Response(content="Logged out successfully")
     response.delete_cookie(key="access_token")
@@ -138,7 +138,7 @@ async def logout_web_client(request: Request):
     return response
 
 
-@htmx_router.get("/dashboard", response_class=HTMLResponse)
+@web_router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(
     request: Request,
     auth_result: Union[User, Response] = Depends(require_auth),
@@ -150,7 +150,7 @@ async def dashboard(
     )
 
 
-@htmx_router.get("/settings", response_class=HTMLResponse)
+@web_router.get("/settings", response_class=HTMLResponse)
 async def settings(
     request: Request,
     auth_result: Union[User, Response] = Depends(require_auth),
@@ -162,7 +162,7 @@ async def settings(
     )
 
 
-@htmx_router.post("/htmx/add/", response_class=HTMLResponse)
+@web_router.post("/htmx/add/", response_class=HTMLResponse)
 async def htmx_add_item(
     request: Request,
     name: str = Form(...),
@@ -177,7 +177,7 @@ async def htmx_add_item(
     )
 
 
-@htmx_router.post("/htmx/chat/", response_class=HTMLResponse)
+@web_router.post("/htmx/chat/", response_class=HTMLResponse)
 async def htmx_chat(
     request: Request,
     script: str = Form(...),
