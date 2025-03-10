@@ -18,6 +18,12 @@ class User(BaseModel):
     email: EmailStr
     email_confirmed: bool = False
     last_sign_in: Optional[datetime] = None
+    phone_number: Optional[str] = None
+
+
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
 
 
 class AuthResponse(BaseModel):

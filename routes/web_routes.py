@@ -13,8 +13,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from services.item import ItemService, get_item_service
 from services.chat import ChatService, get_chat_service
-from services.auth import AuthService, get_auth_service, require_auth
-from models.auth import UserCreate, UserLogin, User
+from services.auth import AuthService, get_auth_service
+from models.auth import UserCreate, UserLogin, User, UserUpdate
 from typing import Union
 import logging
 
@@ -140,26 +140,31 @@ async def logout_web_client(request: Request):
 
 @web_router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(
-    request: Request,
-    auth_result: Union[User, Response] = Depends(require_auth),
+    request: Request, auth_service: AuthService = Depends(get_auth_service)
 ):
-    if isinstance(auth_result, Response):
-        return auth_result
-    return templates.TemplateResponse(
-        "pages/dashboard.html", {"request": request, "current_user": auth_result}
+    return await auth_service.require_auth(
+        lambda user: async_template_response(
+            "pages/dashboard.html", {"request": request, "current_user": user}
+        ),
+        request,
     )
 
 
 @web_router.get("/settings", response_class=HTMLResponse)
 async def settings(
     request: Request,
-    auth_result: Union[User, Response] = Depends(require_auth),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
-    if isinstance(auth_result, Response):
-        return auth_result
-    return templates.TemplateResponse(
-        "pages/settings.html", {"request": request, "current_user": auth_result}
+    return await auth_service.require_auth(
+        lambda user: async_template_response(
+            "pages/settings.html", {"request": request, "current_user": user}
+        ),
+        request,
     )
+
+
+async def async_template_response(template_name: str, context: dict) -> Response:
+    return templates.TemplateResponse(template_name, context)
 
 
 @web_router.post("/htmx/add/", response_class=HTMLResponse)
@@ -186,4 +191,52 @@ async def htmx_chat(
     response = await service.get_chat_response(script)
     return templates.TemplateResponse(
         "components/_chat.html", {"request": request, "response": response}
+    )
+
+
+async def update_user_profile_handler(
+    email: str | None,
+    phone_number: str | None,
+    request: Request,
+    user: User,
+    service: AuthService,
+) -> Response:
+    try:
+        # Create update data
+        user_data = UserUpdate(email=email, phone_number=phone_number)
+
+        # Update user
+        await service.update_user(user.id, user_data)
+
+        # Return success message
+        return templates.TemplateResponse(
+            "components/success_message.html",
+            {"request": request, "message": "Profile updated successfully"},
+        )
+
+    except HTTPException as e:
+        return templates.TemplateResponse(
+            "components/error_message.html",
+            {"request": request, "message": e.detail},
+        )
+    except Exception as e:
+        logger.error(f"Profile update failed: {str(e)}")
+        return templates.TemplateResponse(
+            "components/error_message.html",
+            {"request": request, "message": str(e)},
+        )
+
+
+@web_router.post("/settings/update", response_class=HTMLResponse)
+async def update_user_profile(
+    request: Request,
+    email: str | None = Form(None),
+    phone_number: str | None = Form(None),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    return await auth_service.require_auth(
+        lambda user: update_user_profile_handler(
+            email, phone_number, request, user, auth_service
+        ),
+        request,
     )

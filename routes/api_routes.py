@@ -13,7 +13,7 @@ from services.item import ItemService, get_item_service
 from services.chat import ChatService, get_chat_service
 from services.auth import AuthService, get_auth_service
 from models.item import Item
-from models.auth import UserCreate, UserLogin, AuthResponse
+from models.auth import UserCreate, UserLogin, AuthResponse, UserUpdate, User
 
 api_router = APIRouter(prefix="/api")
 
@@ -57,6 +57,22 @@ async def api_refresh_token(
         samesite="lax",
     )
     return response
+
+
+@api_router.put("/auth/user", response_model=User)
+async def api_update_user(
+    user_id: str,
+    user_data: UserUpdate,
+    request: Request,
+    service: AuthService = Depends(get_auth_service),
+):
+    access_token = request.headers.get("Authorization")
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header missing",
+        )
+    return await service.update_user(user_id, user_data, access_token)
 
 
 # Core API Endpoints
