@@ -301,14 +301,8 @@ class AuthService:
 
         # If we get here, authentication failed
         # Store the original URL in the session for redirect after login
-        response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
-        response.set_cookie(
-            key="next",
-            value=str(request.url),
-            httponly=True,
-            secure=True,
-            samesite="lax",
-        )
+        response = Response(content="Log in required to access this page")
+        response.headers["HX-Redirect"] = str(request.url)
 
         return response
 
