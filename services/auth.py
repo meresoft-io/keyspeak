@@ -23,6 +23,26 @@ def get_supabase_client(
     return create_client(str(config.url), config.key)
 
 
+def set_token_cookies(
+    response: Response, access_token: str, refresh_token: str
+) -> Response:
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+    )
+    return response
+
+
 class AuthService:
     def __init__(
         self,
@@ -184,103 +204,100 @@ class AuthService:
         except Exception as e:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
-    async def update_user(self, user_id: str, user_data: UserUpdate) -> User:
-        try:
-            # First get the current user to ensure they exist
-            user = await self.get_current_user()
-            if not user or user.id != user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not authorized to update this user",
-                )
+    async def update_user(self, user: User, user_data: UserUpdate) -> User:
+        update_data: Dict[str, Any] = {}
 
-            # Prepare update data
-            update_data: Dict[str, Any] = {}
-            user_metadata: Dict[str, str] = {}
+        if (
+            user_data.phone_number is not None
+            and user_data.phone_number != user.phone_number
+        ):
+            update_data["phone_number"] = user_data.phone_number
 
-            # Only include fields that are provided in the update
-            if user_data.phone_number is not None:
-                user_metadata["phone_number"] = user_data.phone_number
+        # Handle email update separately as it's a special case
+        if user_data.email is not None and user_data.email != user.email:
+            update_data["email"] = str(user_data.email)
 
-            if user_metadata:
-                update_data["user_metadata"] = user_metadata
+        # Update the user in Supabase using the access token
+        response = self.supabase.auth.update_user(update_data)  # type: ignore
 
-            # Handle email update separately as it's a special case
-            if user_data.email is not None and user_data.email != user.email:
-                update_data["email"] = str(user_data.email)
-
-            # Update the user in Supabase using the access token
-            response = self.supabase.auth.update_user(update_data)  # type: ignore
-
-            if not response.user:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Failed to update user",
-                )
-
-            email = response.user.email
-            if email is None:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Email cannot be None",
-                )
-
-            # Return updated user
-            return User(
-                id=response.user.id,
-                email=email,
-                email_confirmed=response.user.email_confirmed_at is not None,
-                last_sign_in=response.user.last_sign_in_at,
-                phone_number=response.user.user_metadata.get("phone_number"),
-            )
-
-        except Exception as e:
+        if not response.user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e),
+                detail="Failed to update user",
             )
+
+        email = response.user.email
+        if email is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email cannot be None",
+            )
+
+        # Return updated user
+        return User(
+            id=response.user.id,
+            email=email,
+            email_confirmed=response.user.email_confirmed_at is not None,
+            last_sign_in=response.user.last_sign_in_at,
+            phone_number=response.user.user_metadata.get("phone_number"),
+        )
 
     async def require_auth(
         self,
         callback: Callable[[User], Coroutine[Any, Any, Response]],
         request: Request,
     ) -> Union[User, Response]:
-        # Try to get access token from cookies
+        current_user = None
+
+        # Check to see if user is already authenticated in this session
+        try:
+            current_user = await self.get_current_user()
+        except Exception:
+            pass
+
+        # Short circuit if user is already authenticated in this session
+        if current_user:
+            return await callback(current_user)
+
+        # Attempt to set session from jwt tokens in cookies
         access_token = request.cookies.get("access_token")
-        if access_token:
-            # Try to get user with current access token
-            current_user = await self.get_current_user(access_token)
-            if current_user:
-                return await callback(current_user)
-
-        # If access token is invalid or missing, try to refresh
         refresh_token = request.cookies.get("refresh_token")
-        if refresh_token:
+        if access_token and refresh_token:
+            set_session_response = None
             try:
-                # Try to refresh the token
-                auth_response = await self.refresh_token(refresh_token)
-
-                response = await callback(auth_response.user)
-
-                # Create a response that will be used to set cookies
-                response.set_cookie(
-                    key="access_token",
-                    value=auth_response.access_token,
-                    httponly=True,
-                    secure=True,
-                    samesite="lax",
+                set_session_response = self.supabase.auth.set_session(
+                    access_token, refresh_token
                 )
-                response.set_cookie(
-                    key="refresh_token",
-                    value=auth_response.refresh_token,
-                    httponly=True,
-                    secure=True,
-                    samesite="lax",
-                )
-
-                return response
-            except:
+            except Exception:
                 pass
+
+            if set_session_response and set_session_response.session:
+                current_user = await self.get_current_user()
+                if current_user:
+                    response = await callback(current_user)
+                    response = set_token_cookies(
+                        response,
+                        set_session_response.session.access_token,
+                        set_session_response.session.refresh_token,
+                    )
+                    return response
+
+        # Try the refresh_token method directly
+        if refresh_token:
+            refresh_response = None
+            try:
+                refresh_response = await self.refresh_token(refresh_token)
+            except Exception:
+                pass
+
+            if refresh_response and refresh_response.user:
+                response = await callback(refresh_response.user)
+                response = set_token_cookies(
+                    response,
+                    refresh_response.access_token,
+                    refresh_response.refresh_token,
+                )
+                return response
 
         # If we get here, authentication failed
         # Store the original URL in the session for redirect after login

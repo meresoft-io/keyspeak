@@ -163,6 +163,24 @@ async def settings(
     )
 
 
+@web_router.get("/settings/account", response_class=HTMLResponse)
+async def account_settings(
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    return await auth_service.require_auth(
+        lambda user: async_template_response(
+            "components/account_settings.html",
+            {
+                "request": request,
+                "current_user": user,
+                "email": user.email,
+            },
+        ),
+        request,
+    )
+
+
 async def async_template_response(template_name: str, context: dict) -> Response:
     return templates.TemplateResponse(template_name, context)
 
@@ -206,24 +224,33 @@ async def update_user_profile_handler(
         user_data = UserUpdate(email=email, phone_number=phone_number)
 
         # Update user
-        await service.update_user(user.id, user_data)
+        updated_user = await service.update_user(user, user_data)
 
         # Return success message
         return templates.TemplateResponse(
             "components/success_message.html",
-            {"request": request, "message": "Profile updated successfully"},
+            {
+                "request": request,
+                "message": "Account updated successfully",
+                "updated_user": updated_user,
+            },
         )
 
     except HTTPException as e:
         return templates.TemplateResponse(
             "components/error_message.html",
             {"request": request, "message": e.detail},
+            status_code=e.status_code,
         )
     except Exception as e:
         logger.error(f"Profile update failed: {str(e)}")
         return templates.TemplateResponse(
             "components/error_message.html",
-            {"request": request, "message": str(e)},
+            {
+                "request": request,
+                "message": "An error occurred while updating your profile. Please try again.",
+            },
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
