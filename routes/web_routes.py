@@ -232,7 +232,6 @@ async def update_user_profile_handler(
             {
                 "request": request,
                 "message": "Account updated successfully",
-                "updated_user": updated_user,
             },
         )
 
