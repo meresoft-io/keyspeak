@@ -3,9 +3,21 @@
 {% block content %}
 <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <div class="px-4 py-6 sm:px-0">
-        <div class="flex">
-            <!-- Settings Sidebar -->
-            <div class="w-64 bg-white rounded-lg shadow-lg">
+        <!-- Mobile Settings Select -->
+        <div class="block md:hidden mb-6">
+            <label for="mobile-settings-nav" class="sr-only">Select setting category</label>
+            <select id="mobile-settings-nav" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                <option value="#profile">Profile</option>
+                <option value="/settings/account">Account</option>
+                <option value="#notifications">Notifications</option>
+                <option value="#privacy">Privacy</option>
+                <option value="#integrations">Integrations</option>
+            </select>
+        </div>
+
+        <div class="flex flex-col md:flex-row">
+            <!-- Settings Sidebar - Hidden on mobile, visible on md+ screens -->
+            <div class="hidden md:block md:w-64 bg-white rounded-lg shadow-lg">
                 <nav class="space-y-1 p-4">
                     <a href="#profile"
                         class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 rounded-md transition-colors group">
@@ -47,14 +59,44 @@
                 </nav>
             </div>
 
-            <!-- Main content area -->
-            <div id="settings-content" class="flex-1 ml-4">
+            <!-- Main content --> area -->
+            <div id="settings-content" class="flex-1 md:ml-4 mt-4 md:mt-0">
                 <!-- Content will be loaded here via HTMX -->
-                <div class="flex items-center justify-center h-96 border-4 border-dashed border-gray-200 rounded-lg">
-                    <p class="text-gray-500">Select a settings option from the sidebar</p>
+                <div class="flex items-center justify-center h-64 md:h-96 border-4 border-dashed border-gray-200 rounded-lg">
+                    <p class="text-gray-500 text-center px-4">Select a settings option from the dropdown or sidebar</p>
                 </div>
             </div>
         </div>
     </div>
 </main>
+
+<!-- JavaScript for mobile settings navigation -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileNav = document.getElementById('mobile-settings-nav');
+        if (mobileNav) {
+            mobileNav.addEventListener('change', function(e) {
+                const selectedOption = e.target.value;
+                if (selectedOption.startsWith('/')) {
+                    // If it's an HTMX endpoint, trigger an HTMX request
+                    const event = new Event('htmx:load');
+                    document.body.dispatchEvent(event);
+                    
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', selectedOption, true);
+                    xhr.setRequestHeader('HX-Request', 'true');
+                    xhr.onload = function() {
+                        if (xhr.status === 200) {
+                            document.getElementById('settings-content').innerHTML = xhr.responseText;
+                        }
+                    };
+                    xhr.send();
+                } else {
+                    // If it's a regular anchor, navigate to it
+                    window.location.hash = selectedOption.replace('#', '');
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
