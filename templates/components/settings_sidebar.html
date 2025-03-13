@@ -3,7 +3,7 @@
 
 <!-- Actual sidebar -->
 <div id="sidebar"
-    class="fixed md:absolute left-0 top-[64px] w-64 bg-white border-r border-gray-200 p-4 h-[calc(100vh-64px)] md:h-screen transition-all duration-300">
+    class="fixed md:absolute left-0 top-[64px] bottom-0 w-64 bg-white border-r border-gray-200 p-4 h-screen transition-all duration-300">
     <div class="relative">
         <!-- Toggle button for mobile -->
         <button id="sidebarToggle" class="md:hidden absolute -right-7 top-0 bg-white rounded-full p-1 shadow-md z-10">
@@ -65,6 +65,7 @@
     </div>
 </div>
 
+{% block extra_scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const sidebarToggle = document.getElementById('sidebarToggle');
@@ -111,3 +112,4 @@
         });
     });
 </script>
+{% endblock %}

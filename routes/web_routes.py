@@ -20,8 +20,8 @@ import logging
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 web_router = APIRouter()
@@ -30,69 +30,55 @@ templates = Jinja2Templates(directory="templates")
 
 @web_router.get("/", response_class=HTMLResponse)
 async def index(
-        request: Request,
-        service: ItemService = Depends(get_item_service),
-        auth_service: AuthService = Depends(get_auth_service),
+    request: Request,
+    service: ItemService = Depends(get_item_service),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     access_token = request.cookies.get("access_token")
     current_user = await auth_service.get_current_user(access_token)
-    return templates.TemplateResponse("pages/index.html", {
-        "request": request,
-        "current_user": current_user
-    })
+    return templates.TemplateResponse(
+        "pages/index.html", {"request": request, "current_user": current_user}
+    )
 
 
 @web_router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    return templates.TemplateResponse("pages/register.html",
-                                      {"request": request})
+    return templates.TemplateResponse("pages/register.html", {"request": request})
 
 
 @web_router.post("/register", response_class=HTMLResponse)
 async def register_user(
-        request: Request,
-        email: str = Form(...),
-        password: str = Form(...),
-        confirm_password: str = Form(...),
-        service: AuthService = Depends(get_auth_service),
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    service: AuthService = Depends(get_auth_service),
 ):
     if password != confirm_password:
         logger.info("Registration failed: Passwords do not match")
         return templates.TemplateResponse(
             "components/error_message.html",
-            {
-                "request": request,
-                "message": "Passwords do not match"
-            },
+            {"request": request, "message": "Passwords do not match"},
         )
 
     try:
         user_data = UserCreate(email=email, password=password)
         auth_response = await service.register(user_data)
-        response = RedirectResponse(url="/dashboard",
-                                    status_code=status.HTTP_302_FOUND)
-        response.set_cookie(key="access_token",
-                            value=auth_response.access_token)
-        response.set_cookie(key="refresh_token",
-                            value=auth_response.refresh_token)
+        response = RedirectResponse(url="/chat", status_code=status.HTTP_302_FOUND)
+        response.set_cookie(key="access_token", value=auth_response.access_token)
+        response.set_cookie(key="refresh_token", value=auth_response.refresh_token)
         return response
     except HTTPException as e:
         logger.error(f"Registration failed: {e.detail}")
         return templates.TemplateResponse(
             "components/error_message.html",
-            {
-                "request": request,
-                "message": e.detail
-            },
+            {"request": request, "message": e.detail},
         )
     except Exception as e:
         logger.error(f"Registration failed: {str(e)}")
         return templates.TemplateResponse(
             "components/error_message.html",
-            {
-                "request": request,
-                "message": str(e)
-            },
+            {"request": request, "message": str(e)},
         )
 
 
@@ -103,15 +89,15 @@ async def login_page(request: Request):
 
 @web_router.post("/login", response_class=HTMLResponse)
 async def login_user(
-        request: Request,
-        email: str = Form(...),
-        password: str = Form(...),
-        service: AuthService = Depends(get_auth_service),
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    service: AuthService = Depends(get_auth_service),
 ):
     try:
         credentials = UserLogin(email=email, password=password)
         auth_response = await service.login(credentials)
-        next_url = request.cookies.get("next", "/dashboard")
+        next_url = request.cookies.get("next", "/chat")
         response = Response(content="Logged in successfully")
         response.set_cookie(
             key="access_token",
@@ -133,19 +119,13 @@ async def login_user(
     except HTTPException as e:
         return templates.TemplateResponse(
             "components/error_message.html",
-            {
-                "request": request,
-                "message": e.detail
-            },
+            {"request": request, "message": e.detail},
         )
     except Exception as e:
         logger.error(f"Login failed: {str(e)}")
         return templates.TemplateResponse(
             "components/error_message.html",
-            {
-                "request": request,
-                "message": str(e)
-            },
+            {"request": request, "message": str(e)},
         )
 
 
@@ -158,14 +138,12 @@ async def logout_web_client(request: Request):
     return response
 
 
-@web_router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request,
-                    auth_service: AuthService = Depends(get_auth_service)):
+@web_router.get("/chat", response_class=HTMLResponse)
+async def chat(request: Request, auth_service: AuthService = Depends(get_auth_service)):
     return await auth_service.require_auth(
-        lambda user: async_template_response("pages/dashboard.html", {
-            "request": request,
-            "current_user": user
-        }),
+        lambda user: async_template_response(
+            "pages/chat.html", {"request": request, "current_user": user}
+        ),
         request,
     )
 
@@ -173,8 +151,8 @@ async def dashboard(request: Request,
 @web_router.get("/settings", response_class=HTMLResponse)
 @web_router.get("/settings/account", response_class=HTMLResponse)
 async def account_settings(
-        request: Request,
-        auth_service: AuthService = Depends(get_auth_service),
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     return await auth_service.require_auth(
         lambda user: async_template_response(
@@ -189,38 +167,8 @@ async def account_settings(
     )
 
 
-async def async_template_response(template_name: str,
-                                  context: dict) -> Response:
+async def async_template_response(template_name: str, context: dict) -> Response:
     return templates.TemplateResponse(template_name, context)
-
-
-@web_router.post("/htmx/add/", response_class=HTMLResponse)
-async def htmx_add_item(
-        request: Request,
-        name: str = Form(...),
-        quantity: int = Form(...),
-        image: UploadFile | None = File(None),
-        service: ItemService = Depends(get_item_service),
-):
-    image_content = await image.read() if image else None
-    item = await service.add_item(name, quantity, image_content)
-    return templates.TemplateResponse("components/_item.html", {
-        "request": request,
-        "item": item
-    })
-
-
-@web_router.post("/htmx/chat/", response_class=HTMLResponse)
-async def htmx_chat(
-        request: Request,
-        script: str = Form(...),
-        service: ChatService = Depends(get_chat_service),
-):
-    response = await service.get_chat_response(script)
-    return templates.TemplateResponse("components/_chat.html", {
-        "request": request,
-        "response": response
-    })
 
 
 async def update_user_profile_handler(
@@ -249,10 +197,7 @@ async def update_user_profile_handler(
     except HTTPException as e:
         return templates.TemplateResponse(
             "components/error_message.html",
-            {
-                "request": request,
-                "message": e.detail
-            },
+            {"request": request, "message": e.detail},
             status_code=e.status_code,
         )
     except Exception as e:
@@ -260,10 +205,8 @@ async def update_user_profile_handler(
         return templates.TemplateResponse(
             "components/error_message.html",
             {
-                "request":
-                request,
-                "message":
-                "An error occurred while updating your profile. Please try again.",
+                "request": request,
+                "message": "An error occurred while updating your profile. Please try again.",
             },
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
@@ -271,13 +214,14 @@ async def update_user_profile_handler(
 
 @web_router.post("/settings/update", response_class=HTMLResponse)
 async def update_user_profile(
-        request: Request,
-        email: str | None = Form(None),
-        phone_number: str | None = Form(None),
-        auth_service: AuthService = Depends(get_auth_service),
+    request: Request,
+    email: str | None = Form(None),
+    phone_number: str | None = Form(None),
+    auth_service: AuthService = Depends(get_auth_service),
 ):
     return await auth_service.require_auth(
-        lambda user: update_user_profile_handler(email, phone_number, request,
-                                                 user, auth_service),
+        lambda user: update_user_profile_handler(
+            email, phone_number, request, user, auth_service
+        ),
         request,
     )
