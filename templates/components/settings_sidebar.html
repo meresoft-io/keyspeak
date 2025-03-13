@@ -1,37 +1,113 @@
-<div class="flex flex-col space-y-2">
-    <a href="/settings/account" hx-get="/settings/account" hx-target="#settings-content"
-        class="flex items-center p-3 rounded-lg hover:bg-gray-100 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-        <span class="font-medium">Account Settings</span>
-    </a>
-    <a href="/settings/billing" hx-get="/settings/billing" hx-target="#settings-content"
-        class="flex items-center p-3 rounded-lg hover:bg-gray-100 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-        <span class="font-medium">Billing</span>
-    </a>
-    <a href="/settings/notifications" hx-get="/settings/notifications" hx-target="#settings-content"
-        class="flex items-center p-3 rounded-lg hover:bg-gray-100 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-        <span class="font-medium">Notifications</span>
-    </a>
-    <a href="/settings/integrations" hx-get="/settings/integrations" hx-target="#settings-content"
-        class="flex items-center p-3 rounded-lg hover:bg-gray-100 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-        <span class="font-medium">Integrations</span>
-    </a>
-    <a href="/settings/security" hx-get="/settings/security" hx-target="#settings-content"
-        class="flex items-center p-3 rounded-lg hover:bg-gray-100 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
-        <span class="font-medium">Security</span>
-    </a>
+<!-- Spacer div for desktop layout -->
+<div class="mx-8 md:mx-32"></div>
+
+<!-- Actual sidebar -->
+<div id="sidebar"
+    class="fixed md:absolute left-0 top-[64px] w-64 bg-white border-r border-gray-200 p-4 h-[calc(100vh-64px)] md:h-screen transition-all duration-300">
+    <div class="relative">
+        <!-- Toggle button for mobile -->
+        <button id="sidebarToggle" class="md:hidden absolute -right-7 top-0 bg-white rounded-full p-1 shadow-md z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+        </button>
+
+        <!-- Sidebar -->
+        <div class="space-y-1">
+            <a href="/settings/account"
+                class="flex items-center h-10 p-2 rounded-lg hover:bg-gray-100 {% if request.url.path == '/settings/account' %}bg-blue-50 text-blue-600{% else %}text-gray-700{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span class="ml-3 whitespace-nowrap overflow-hidden">Account Settings</span>
+            </a>
+            <a href="/settings/notifications"
+                class="flex items-center h-10 p-2 rounded-lg hover:bg-gray-100 {% if request.url.path == '/settings/notifications' %}bg-blue-50 text-blue-600{% else %}text-gray-700{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span class="ml-3 whitespace-nowrap overflow-hidden">Notifications</span>
+            </a>
+            <a href="/settings/billing"
+                class="flex items-center h-10 p-2 rounded-lg hover:bg-gray-100 {% if request.url.path == '/settings/billing' %}bg-blue-50 text-blue-600{% else %}text-gray-700{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                <span class="ml-3 whitespace-nowrap overflow-hidden">Billing</span>
+            </a>
+            <a href="/settings/security"
+                class="flex items-center h-10 p-2 rounded-lg hover:bg-gray-100 {% if request.url.path == '/settings/security' %}bg-blue-50 text-blue-600{% else %}text-gray-700{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span class="ml-3 whitespace-nowrap overflow-hidden">Security</span>
+            </a>
+            <a href="/settings/integrations"
+                class="flex items-center h-10 p-2 rounded-lg hover:bg-gray-100 {% if request.url.path == '/settings/integrations' %}bg-blue-50 text-blue-600{% else %}text-gray-700{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span class="ml-3 whitespace-nowrap overflow-hidden">Integrations</span>
+            </a>
+        </div>
+    </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarTexts = sidebar.querySelectorAll('span');
+        const toggleIcon = sidebarToggle.querySelector('svg');
+        const mobileMediaQuery = window.matchMedia('(max-width: 768px)');
+
+        // Add transition for smooth rotation
+        toggleIcon.style.transition = 'transform 0.3s ease';
+
+        function applySidebarState() {
+            const isMobile = mobileMediaQuery.matches;
+
+            if (isMobile) {
+                // Always collapsed on mobile
+                sidebar.classList.add('w-16');
+                sidebarTexts.forEach(text => text.classList.add('hidden'));
+                toggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                // Always expanded on desktop
+                sidebar.classList.remove('w-16');
+                sidebarTexts.forEach(text => text.classList.remove('hidden'));
+                toggleIcon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Apply initial state
+        applySidebarState();
+
+        // Listen for screen size changes
+        mobileMediaQuery.addEventListener('change', applySidebarState);
+
+        sidebarToggle.addEventListener('click', () => {
+            const isMobile = mobileMediaQuery.matches;
+            if (!isMobile) return; // Ignore clicks on desktop
+
+            sidebar.classList.toggle('w-16');
+            sidebarTexts.forEach(text => text.classList.toggle('hidden'));
+
+            // Toggle rotation of the icon
+            const isCollapsed = sidebar.classList.contains('w-16');
+            toggleIcon.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        });
+    });
+</script>
