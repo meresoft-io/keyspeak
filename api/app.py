@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 # Get the absolute path to the static directory
-static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include routers
 app.include_router(api_router)
