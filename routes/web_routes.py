@@ -3,8 +3,6 @@ from fastapi import (
     Request,
     Depends,
     Form,
-    File,
-    UploadFile,
     Response,
     status,
     HTTPException,
@@ -12,10 +10,8 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from services.item import ItemService, get_item_service
-from services.chat import ChatService, get_chat_service
 from services.auth import AuthService, get_auth_service
 from models.auth import UserCreate, UserLogin, User, UserUpdate
-from typing import Union
 import logging
 
 # Configure logging

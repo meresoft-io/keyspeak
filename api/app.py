@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import logging
+import os
 from routes.api_routes import api_router
 from routes.web_routes import web_router
 
@@ -11,7 +12,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Get the absolute path to the static directory
+static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Include routers
 app.include_router(api_router)
