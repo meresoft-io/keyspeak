@@ -11,7 +11,6 @@ from fastapi import (
 )
 from services.chat import ChatService, get_chat_service
 from services.auth import AuthService, get_auth_service
-from models.item import Item
 from models.auth import UserCreate, UserLogin, AuthResponse, UserUpdate, User
 
 api_router = APIRouter(prefix="/api")
