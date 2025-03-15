@@ -17,7 +17,7 @@ class ChatService:
 
     async def get_chat_response(self, script: str) -> str:
         response = await self.openai.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": f"Act as a customer: {script}"}],
         )
         content = response.choices[0].message.content

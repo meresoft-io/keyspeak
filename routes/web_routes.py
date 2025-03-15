@@ -9,7 +9,6 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from services.item import ItemService, get_item_service
 from services.auth import AuthService, get_auth_service
 from models.auth import UserCreate, UserLogin, User, UserUpdate
 import logging
@@ -27,7 +26,6 @@ templates = Jinja2Templates(directory="templates")
 @web_router.get("/", response_class=HTMLResponse)
 async def index(
     request: Request,
-    service: ItemService = Depends(get_item_service),
     auth_service: AuthService = Depends(get_auth_service),
 ):
     access_token = request.cookies.get("access_token")

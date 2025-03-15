@@ -1,0 +1,15 @@
+<!-- Client Message Component -->
+<div class="flex items-start space-x-3 my-1">
+    <div class="flex-shrink-0">
+        <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+            {{ initials }}
+        </div>
+    </div>
+    <div class="flex-1">
+        <div class="bg-gray-200 rounded-2xl py-1 px-3 inline-block max-w-[66%] relative">
+            <div class="absolute left-[-6px] top-[8px] w-4 h-4 bg-gray-200"
+                style="clip-path: polygon(0% 50%, 50% 0%, 100% 50%, 50% 100%); border-radius: 1px;"></div>
+            <p class="text-gray-800 relative">{{ message }}</p>
+        </div>
+    </div>
+</div>

@@ -9,7 +9,6 @@ from fastapi import (
     UploadFile,
     Response,
 )
-from services.item import ItemService, get_item_service
 from services.chat import ChatService, get_chat_service
 from services.auth import AuthService, get_auth_service
 from models.item import Item
@@ -57,39 +56,6 @@ async def api_refresh_token(
         samesite="lax",
     )
     return response
-
-
-@api_router.put("/auth/user", response_model=User)
-async def api_update_user(
-    user_id: str,
-    user_data: UserUpdate,
-    request: Request,
-    service: AuthService = Depends(get_auth_service),
-):
-    access_token = request.headers.get("Authorization")
-    if not access_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header missing",
-        )
-    return await service.update_user(user_id, user_data, access_token)
-
-
-# Core API Endpoints
-@api_router.get("/items/", response_model=list[Item])
-async def api_get_items(service: ItemService = Depends(get_item_service)):
-    return await service.get_items()
-
-
-@api_router.post("/items/", response_model=Item)
-async def api_add_item(
-    name: str = Form(...),
-    quantity: int = Form(...),
-    image: UploadFile | None = File(None),
-    service: ItemService = Depends(get_item_service),
-):
-    image_content = await image.read() if image else None
-    return await service.add_item(name, quantity, image_content)
 
 
 @api_router.post("/chat/")
