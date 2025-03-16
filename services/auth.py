@@ -278,7 +278,6 @@ async def get_auth_service(
 async def require_auth(
     access_token: str | None = Cookie(default=None),
     config: SupabaseConfig = Depends(get_supabase_config),
-    auth_service: AuthService = Depends(get_auth_service),
 ) -> User:
     if access_token is None:
         raise HTTPException(
