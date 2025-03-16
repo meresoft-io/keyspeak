@@ -1,0 +1,11 @@
+{% extends "bases/app_base.html" %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-screen bg-gray-100">
+    <button
+        class="px-6 py-3 text-lg font-semibold text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+        hx-get="/chat/create/wizard" hx-target="body" hx-swap="beforeend">
+        New Chat
+    </button>
+</div>
+{% endblock %}

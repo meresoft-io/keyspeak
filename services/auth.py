@@ -1,12 +1,15 @@
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status, Request, Cookie
 from fastapi.responses import RedirectResponse, Response
+from fastapi.security import OAuth2PasswordBearer
 from supabase import Client, create_client
+from models.auth import JWTStatus
 from models.config import SupabaseConfig, AppConfig
-import os
 from models.auth import User, UserCreate, UserLogin, AuthResponse, UserUpdate
-from typing import Callable, Optional, Union, Dict, Any, cast, Coroutine
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request as StarletteRequest
+from typing import Callable, Optional, Union, Dict, Any, Coroutine
+from jose import jwt, JWTError
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 
 def get_supabase_config() -> SupabaseConfig:
@@ -140,9 +143,7 @@ class AuthService:
         except Exception as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    async def get_current_user(
-        self, access_token: Optional[str] = None
-    ) -> Optional[User]:
+    async def get_current_user(self, access_token: str) -> Optional[User]:
         try:
             auth_response = self.supabase.auth.get_user(access_token)
 
@@ -204,6 +205,14 @@ class AuthService:
         except Exception as e:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
+    # Static version of refresh_token with no dependencies for use in middleware
+    @staticmethod
+    async def refresh_token_static(refresh_token: str) -> AuthResponse:
+        supabase_config = get_supabase_config()
+        supabase = get_supabase_client(supabase_config)
+        auth_service = AuthService(supabase, get_app_config())
+        return await auth_service.refresh_token(refresh_token)
+
     async def update_user(self, user: User, user_data: UserUpdate) -> User:
         update_data: Dict[str, Any] = {}
 
@@ -242,78 +251,21 @@ class AuthService:
             phone_number=response.user.user_metadata.get("phone_number"),
         )
 
-    async def require_auth(
-        self,
-        callback: Callable[[User], Coroutine[Any, Any, Response]],
-        request: Request,
-    ) -> Union[User, Response]:
-        current_user = None
-
-        # Check to see if user is already authenticated in this session
+    @staticmethod
+    def get_jwt_status(access_token: str) -> JWTStatus:
+        supabase_config = get_supabase_config()
         try:
-            current_user = await self.get_current_user()
-        except Exception:
-            pass
-
-        # Short circuit if user is already authenticated in this session
-        if current_user:
-            return await callback(current_user)
-
-        # Attempt to set session from jwt tokens in cookies
-        access_token = request.cookies.get("access_token")
-        refresh_token = request.cookies.get("refresh_token")
-        if access_token and refresh_token:
-            set_session_response = None
-            try:
-                set_session_response = self.supabase.auth.set_session(
-                    access_token, refresh_token
-                )
-            except Exception:
-                pass
-
-            if set_session_response and set_session_response.session:
-                current_user = await self.get_current_user()
-                if current_user:
-                    response = await callback(current_user)
-                    response = set_token_cookies(
-                        response,
-                        set_session_response.session.access_token,
-                        set_session_response.session.refresh_token,
-                    )
-                    return response
-
-        # Try the refresh_token method directly
-        if refresh_token:
-            refresh_response = None
-            try:
-                refresh_response = await self.refresh_token(refresh_token)
-            except Exception:
-                pass
-
-            if refresh_response and refresh_response.user:
-                response = await callback(refresh_response.user)
-                response = set_token_cookies(
-                    response,
-                    refresh_response.access_token,
-                    refresh_response.refresh_token,
-                )
-                return response
-
-        # If we get here, authentication failed
-        # Store the original URL in the session for redirect after login
-        response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
-        response.set_cookie(
-            key="next",
-            value=str(request.url),
-            httponly=True,
-            secure=True,
-            samesite="lax",
-        )
-        # If the request is an HTMX request, this is the magic that will
-        # redirect the user to the login page without reloading the page
-        response.headers["HX-Redirect"] = "/login"
-
-        return response
+            jwt.decode(
+                access_token,
+                supabase_config.jwt_secret,
+                algorithms=["HS256"],
+                options={"verify_aud": False},
+            )
+            return JWTStatus.VALID
+        except JWTError as e:
+            if "expired" in str(e).lower():
+                return JWTStatus.EXPIRED
+            return JWTStatus.INVALID
 
 
 async def get_auth_service(
@@ -321,3 +273,34 @@ async def get_auth_service(
     app_config: AppConfig = Depends(get_app_config),
 ) -> AuthService:
     return AuthService(supabase, app_config)
+
+
+async def require_auth(
+    access_token: str | None = Cookie(default=None),
+    config: SupabaseConfig = Depends(get_supabase_config),
+    auth_service: AuthService = Depends(get_auth_service),
+) -> User:
+    if access_token is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Decode and verify the JWT using Supabase's secret
+    payload = jwt.decode(
+        access_token,
+        config.jwt_secret,
+        algorithms=["HS256"],
+        options={"verify_aud": False},  # Supabase JWTs may not always include 'aud'
+    )
+    # 'sub' is the user ID in Supabase JWTs
+    user_id: str | None = payload.get("sub")
+    email: str | None = payload.get("email")
+    if user_id is None or email is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return User(id=user_id, email=email)

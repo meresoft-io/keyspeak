@@ -1,3 +1,4 @@
+from enum import Enum
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
@@ -30,3 +31,9 @@ class AuthResponse(BaseModel):
     user: User
     access_token: str
     refresh_token: str
+
+
+class JWTStatus(Enum):
+    VALID = "valid"
+    EXPIRED = "expired"
+    INVALID = "invalid"

@@ -6,10 +6,11 @@ from fastapi import (
     Response,
     status,
     HTTPException,
+    FastAPI,
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from services.auth import AuthService, get_auth_service
+from services.auth import AuthService, get_auth_service, require_auth
 from models.auth import UserCreate, UserLogin, User, UserUpdate
 import logging
 
@@ -18,6 +19,8 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+app = FastAPI()
 
 web_router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -29,7 +32,9 @@ async def index(
     auth_service: AuthService = Depends(get_auth_service),
 ):
     access_token = request.cookies.get("access_token")
-    current_user = await auth_service.get_current_user(access_token)
+    current_user = None
+    if access_token:
+        current_user = await auth_service.get_current_user(access_token)
     return templates.TemplateResponse(
         "pages/index.html", {"request": request, "current_user": current_user}
     )
@@ -133,12 +138,18 @@ async def logout_web_client(request: Request):
 
 
 @web_router.get("/chat", response_class=HTMLResponse)
-async def chat(request: Request, auth_service: AuthService = Depends(get_auth_service)):
-    return await auth_service.require_auth(
-        lambda user: async_template_response(
-            "pages/chat.html", {"request": request, "current_user": user}
-        ),
-        request,
+async def chat(request: Request, current_user: User = Depends(require_auth)):
+    return templates.TemplateResponse(
+        "pages/chat_dashboard.html", {"request": request, "current_user": current_user}
+    )
+
+
+@web_router.get("/chat/create/wizard", response_class=HTMLResponse)
+async def chat_create_wizard(
+    request: Request, auth_response: User = Depends(require_auth)
+):
+    return templates.TemplateResponse(
+        "components/chat_create_wizard.html", {"request": request}
     )
 
 
@@ -146,18 +157,15 @@ async def chat(request: Request, auth_service: AuthService = Depends(get_auth_se
 @web_router.get("/settings/account", response_class=HTMLResponse)
 async def account_settings(
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service),
+    current_user: User = Depends(require_auth),
 ):
-    return await auth_service.require_auth(
-        lambda user: async_template_response(
-            "pages/account_settings.html",
-            {
-                "request": request,
-                "current_user": user,
-                "email": user.email,
-            },
-        ),
-        request,
+    return templates.TemplateResponse(
+        "pages/account_settings.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "email": current_user.email,
+        },
     )
 
 
@@ -211,11 +219,9 @@ async def update_user_profile(
     request: Request,
     email: str | None = Form(None),
     phone_number: str | None = Form(None),
+    current_user: User = Depends(require_auth),
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    return await auth_service.require_auth(
-        lambda user: update_user_profile_handler(
-            email, phone_number, request, user, auth_service
-        ),
-        request,
+    return await update_user_profile_handler(
+        email, phone_number, request, current_user, auth_service
     )

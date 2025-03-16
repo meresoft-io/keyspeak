@@ -18,18 +18,18 @@ class AppConfig(BaseModel):
 class SupabaseConfig(BaseModel):
     url: HttpUrl = Field(..., description="Supabase project URL")
     key: str = Field(..., min_length=1, description="Supabase anon key")
-    site_url: Optional[str] = Field(None, description="Site URL for redirects")
+    jwt_secret: str = Field(..., description="JWT secret")
 
     @classmethod
     def from_env(cls) -> "SupabaseConfig":
         url = os.getenv("SUPABASE_URL")
         key = os.getenv("SUPABASE_KEY")
-        site_url = os.getenv("SITE_URL")
-        if url is None or key is None:
+        jwt_secret = os.getenv("SUPABASE_JWT_SECRET")
+        if url is None or key is None or jwt_secret is None:
             raise ValueError(
-                "SUPABASE_URL and SUPABASE_KEY must be set in environment variables"
+                "SUPABASE_URL and SUPABASE_KEY and SUPABASE_JWT_SECRET must be set in environment variables"
             )
-        return cls(url=HttpUrl(url), key=key, site_url=site_url)
+        return cls(url=HttpUrl(url), key=key, jwt_secret=jwt_secret)
 
 
 class OpenAIConfig(BaseModel):
