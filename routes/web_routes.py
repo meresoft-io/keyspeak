@@ -138,9 +138,24 @@ async def logout_web_client(request: Request):
 
 
 @web_router.get("/chat", response_class=HTMLResponse)
-async def chat(request: Request, current_user: User = Depends(require_auth)):
+async def chat_dashboard(request: Request, current_user: User = Depends(require_auth)):
     return templates.TemplateResponse(
         "pages/chat_dashboard.html", {"request": request, "current_user": current_user}
+    )
+
+@web_router.get("/chat/{session_id}", response_class=HTMLResponse)
+async def chat(
+    request: Request,
+    session_id: str,
+    current_user: User = Depends(require_auth)
+):
+    return templates.TemplateResponse(
+        "pages/chat.html", 
+        {
+            "request": request, 
+            "current_user": current_user,
+            "session_id": session_id
+        }
     )
 
 
