@@ -153,7 +153,7 @@ async def chat(
     session_id: str,
     current_user: User = Depends(require_auth)
 ):
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         "pages/chat.html", 
         {
             "request": request, 
@@ -161,6 +161,8 @@ async def chat(
             "session_id": session_id
         }
     )
+    response.set_cookie("chat_session_id", session_id, max_age=86400)  # 24 hour expiry
+    return response
 
 
 @web_router.get("/chat/create/wizard", response_class=HTMLResponse)
@@ -187,9 +189,7 @@ async def create_chat(
             )
 
         session_id = str(uuid.uuid4())
-        response = Response(content="Chat created successfully")
-        response.set_cookie("chat_session_id", session_id, max_age=86400)  # 24 hour expiry
-        response.headers["HX-Redirect"] = f"/chat/{session_id}"
+        response = RedirectResponse(url=f"/chat/{session_id}", status_code=status.HTTP_302_FOUND)
         return response
     except Exception as e:
         return templates.TemplateResponse(
