@@ -167,7 +167,8 @@ async def create_chat(
                 {"request": request, "message": "Minimum budget cannot be greater than maximum budget"},
             )
 
-        response = RedirectResponse(url="/chat", status_code=status.HTTP_302_FOUND)
+        response = Response(content="Chat created successfully")
+        response.headers["HX-Redirect"] = "/chat"
         return response
     except Exception as e:
         return templates.TemplateResponse(
