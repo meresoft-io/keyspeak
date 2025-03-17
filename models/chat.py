@@ -64,7 +64,7 @@ class ChatSession(BaseModel):
 
 class MessageCreate(BaseModel):
     chat_session: ChatSession
-    sender: Union[User, Client]
+    sender: Union[User, ClientProfile]
     content: str
 
 

@@ -46,12 +46,10 @@
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="font-sans antialiased bg-gray-50">
+<body class="font-sans antialiased bg-gray-200">
     {% include "includes/app_header.html" %}
 
-    <div class="container">
-        {% block content %}{% endblock %}
-    </div>
+    {% block content %}{% endblock %}
 
     <script>
         // Intersection Observer for animations

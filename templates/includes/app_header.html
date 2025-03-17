@@ -3,7 +3,8 @@
         <div class="flex items-center justify-between h-16">
             <div class="w-1/3">
                 {% if session_id %}
-                <button onclick="document.cookie='chat_session_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; window.location.href='/chat';" 
+                <button
+                    onclick="document.cookie='chat_session_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; window.location.href='/chat';"
                     class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-sm">
                     ← Return
                 </button>
@@ -13,7 +14,7 @@
                 <a href="/chat" class="text-xl font-bold text-blue-600 whitespace-nowrap">KeySpeak</a>
             </div>
             <div class="w-1/3">
-            <nav class="hidden md:ml-6 md:flex md:space-x-8 justify-end">
+                <nav class="hidden md:ml-6 md:flex md:space-x-8 justify-end">
                     <a href="/chat"
                         class="inline-flex items-center px-1 pt-1 border-b-2 {% if request.url.path == '/chat' %}border-blue-500 text-gray-900{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} text-sm font-medium">
                         Chat
@@ -84,6 +85,7 @@
     </div>
 </header>
 
+{% block extra_scripts %}
 <script>
     // Mobile menu toggle for internal header
     document.addEventListener('DOMContentLoaded', function () {
@@ -97,3 +99,4 @@
         }
     });
 </script>
+{% endblock %}
