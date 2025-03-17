@@ -152,6 +152,29 @@ async def chat_create_wizard(
         "components/chat_create_wizard.html", {"request": request}
     )
 
+@web_router.post("/chat/create", response_class=HTMLResponse)
+async def create_chat(
+    request: Request,
+    budget_min: int = Form(...),
+    budget_max: int = Form(...),
+    urgency_level: int = Form(...),
+    current_user: User = Depends(require_auth),
+):
+    try:
+        if budget_min > budget_max:
+            return templates.TemplateResponse(
+                "components/error_message.html",
+                {"request": request, "message": "Minimum budget cannot be greater than maximum budget"},
+            )
+
+        response = RedirectResponse(url="/chat", status_code=status.HTTP_302_FOUND)
+        return response
+    except Exception as e:
+        return templates.TemplateResponse(
+            "components/error_message.html",
+            {"request": request, "message": str(e)},
+        )
+
 
 @web_router.get("/settings", response_class=HTMLResponse)
 @web_router.get("/settings/account", response_class=HTMLResponse)
