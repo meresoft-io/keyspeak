@@ -1,3 +1,4 @@
+import uuid
 from fastapi import (
     APIRouter,
     Request,
@@ -182,8 +183,9 @@ async def create_chat(
                 {"request": request, "message": "Minimum budget cannot be greater than maximum budget"},
             )
 
+        session_id = str(uuid.uuid4())
         response = Response(content="Chat created successfully")
-        response.headers["HX-Redirect"] = "/chat"
+        response.headers["HX-Redirect"] = f"/chat/{session_id}"
         return response
     except Exception as e:
         return templates.TemplateResponse(
