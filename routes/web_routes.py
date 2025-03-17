@@ -189,7 +189,7 @@ async def create_chat(
             )
 
         session_id = str(uuid.uuid4())
-        response = RedirectResponse(url=f"/chat/{session_id}", status_code=status.HTTP_302_FOUND)
+        response = Response(content="Chat created successfully")
         response.headers["HX-Redirect"] = f"/chat/{session_id}"
         return response
     except Exception as e:
